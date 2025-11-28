@@ -16,6 +16,7 @@ class SettingsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final settingsAsync = ref.watch(settingsProvider);
     final isApiKeySet = ref.watch(isApiKeySetProvider);
+    final apiKeySource = ref.watch(apiKeySourceProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -53,38 +54,9 @@ class SettingsScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      isApiKeySet.value == true
-                          ? 'APIキーが設定されています'
-                          : 'APIキーが設定されていません',
-                      style: theme.textTheme.bodyMedium,
-                    ),
+                    _buildApiKeyStatus(theme, isApiKeySet, apiKeySource),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => _showApiKeyDialog(context, ref),
-                            child: Text(
-                              isApiKeySet.value == true
-                                  ? 'キーを変更'
-                                  : 'キーを設定',
-                            ),
-                          ),
-                        ),
-                        if (isApiKeySet.value == true) ...[
-                          const SizedBox(width: 12),
-                          OutlinedButton(
-                            onPressed: () => _deleteApiKey(context, ref),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: theme.colorScheme.error,
-                              side: BorderSide(color: theme.colorScheme.error),
-                            ),
-                            child: const Text('削除'),
-                          ),
-                        ],
-                      ],
-                    ),
+                    _buildApiKeyActions(context, ref, theme, isApiKeySet, apiKeySource),
                   ],
                 ),
               ),
@@ -173,6 +145,110 @@ class SettingsScreen extends ConsumerWidget {
           fontWeight: FontWeight.bold,
         ),
       ),
+    );
+  }
+
+  Widget _buildApiKeyStatus(
+    ThemeData theme,
+    AsyncValue<bool> isApiKeySet,
+    AsyncValue<ApiKeySource> apiKeySource,
+  ) {
+    final source = apiKeySource.value ?? ApiKeySource.none;
+    
+    String statusText;
+    Color? statusColor;
+    
+    switch (source) {
+      case ApiKeySource.env:
+        statusText = 'APIキーが環境設定から読み込まれています';
+        statusColor = theme.colorScheme.primary;
+      case ApiKeySource.secureStorage:
+        statusText = 'APIキーが設定されています';
+        statusColor = null;
+      case ApiKeySource.none:
+        statusText = 'APIキーが設定されていません';
+        statusColor = theme.colorScheme.error;
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          statusText,
+          style: theme.textTheme.bodyMedium?.copyWith(color: statusColor),
+        ),
+        if (source == ApiKeySource.env) ...[
+          const SizedBox(height: 4),
+          Text(
+            '※ 開発設定により自動設定されています',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildApiKeyActions(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeData theme,
+    AsyncValue<bool> isApiKeySet,
+    AsyncValue<ApiKeySource> apiKeySource,
+  ) {
+    final source = apiKeySource.value ?? ApiKeySource.none;
+    
+    // 環境変数から設定されている場合は編集不可
+    if (source == ApiKeySource.env) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.lock_outline,
+              size: 16,
+              color: theme.colorScheme.outline,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '環境設定からの読み込みのため変更できません',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // それ以外は通常のボタン表示
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () => _showApiKeyDialog(context, ref),
+            child: Text(
+              isApiKeySet.value == true ? 'キーを変更' : 'キーを設定',
+            ),
+          ),
+        ),
+        if (isApiKeySet.value == true && source == ApiKeySource.secureStorage) ...[
+          const SizedBox(width: 12),
+          OutlinedButton(
+            onPressed: () => _deleteApiKey(context, ref),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
+              side: BorderSide(color: theme.colorScheme.error),
+            ),
+            child: const Text('削除'),
+          ),
+        ],
+      ],
     );
   }
 
