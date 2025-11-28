@@ -89,40 +89,37 @@ final similarityRepositoryProvider = FutureProvider<SimilarityRepository>((ref) 
 });
 
 /// Memo use cases provider.
-final memoUseCasesProvider = FutureProvider<MemoUseCases?>((ref) async {
+/// GeminiClientはオプショナル - APIキーがなくてもメモの基本操作は可能
+final memoUseCasesProvider = FutureProvider<MemoUseCases>((ref) async {
   final geminiClient = await ref.watch(geminiClientProvider.future);
-  if (geminiClient == null) return null;
-
   final memoRepo = await ref.watch(memoRepositoryProvider.future);
   final similarityRepo = await ref.watch(similarityRepositoryProvider.future);
 
   return MemoUseCases(
     memoRepository: memoRepo,
     similarityRepository: similarityRepo,
-    geminiClient: geminiClient,
+    geminiClient: geminiClient, // null でも可
   );
 });
 
 /// Dictionary use cases provider.
-final dictionaryUseCasesProvider = FutureProvider<DictionaryUseCases?>((ref) async {
+/// GeminiClientはオプショナル - APIキーがなくても辞書の基本操作は可能
+final dictionaryUseCasesProvider = FutureProvider<DictionaryUseCases>((ref) async {
   final geminiClient = await ref.watch(geminiClientProvider.future);
-  if (geminiClient == null) return null;
-
   final dictRepo = await ref.watch(dictionaryRepositoryProvider.future);
   final similarityRepo = await ref.watch(similarityRepositoryProvider.future);
 
   return DictionaryUseCases(
     dictionaryRepository: dictRepo,
     similarityRepository: similarityRepo,
-    geminiClient: geminiClient,
+    geminiClient: geminiClient, // null でも可
   );
 });
 
 /// Similarity use cases provider.
-final similarityUseCasesProvider = FutureProvider<SimilarityUseCases?>((ref) async {
+/// GeminiClientはオプショナル
+final similarityUseCasesProvider = FutureProvider<SimilarityUseCases>((ref) async {
   final geminiClient = await ref.watch(geminiClientProvider.future);
-  if (geminiClient == null) return null;
-
   final memoRepo = await ref.watch(memoRepositoryProvider.future);
   final dictRepo = await ref.watch(dictionaryRepositoryProvider.future);
   final similarityRepo = await ref.watch(similarityRepositoryProvider.future);
@@ -131,7 +128,7 @@ final similarityUseCasesProvider = FutureProvider<SimilarityUseCases?>((ref) asy
     memoRepository: memoRepo,
     dictionaryRepository: dictRepo,
     similarityRepository: similarityRepo,
-    geminiClient: geminiClient,
+    geminiClient: geminiClient, // null でも可
   );
 });
 
