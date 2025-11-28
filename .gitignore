@@ -92,6 +92,7 @@ app.*.symbols
 # Environment
 .env
 .env.*
+!.env.example
 *.env
 
 # API keys
