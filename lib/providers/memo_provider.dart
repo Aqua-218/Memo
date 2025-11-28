@@ -79,8 +79,6 @@ class MemoListNotifier extends AsyncNotifier<MemoListState> {
   Future<Memo?> createMemo(String content) async {
     try {
       final useCases = await ref.read(memoUseCasesProvider.future);
-      if (useCases == null) return null;
-
       final memo = await useCases.createMemoWithAnalysis(content);
       await loadMemos();
       return memo;
@@ -93,8 +91,6 @@ class MemoListNotifier extends AsyncNotifier<MemoListState> {
   Future<Memo?> updateMemo(String id, String content) async {
     try {
       final useCases = await ref.read(memoUseCasesProvider.future);
-      if (useCases == null) return null;
-
       final memo = await useCases.updateMemoWithAnalysis(id, content);
       await loadMemos();
       return memo;
@@ -107,8 +103,6 @@ class MemoListNotifier extends AsyncNotifier<MemoListState> {
   Future<void> deleteMemo(String id) async {
     try {
       final useCases = await ref.read(memoUseCasesProvider.future);
-      if (useCases == null) return;
-
       await useCases.deleteMemo(id);
       await loadMemos();
     } on Exception catch (e) {
@@ -161,8 +155,6 @@ final quickDuplicateCheckProvider = FutureProvider.family<List<Memo>, String>(
     if (content.length < 5) return [];
 
     final useCases = await ref.read(memoUseCasesProvider.future);
-    if (useCases == null) return [];
-
     return useCases.quickDuplicateCheck(content);
   },
 );
