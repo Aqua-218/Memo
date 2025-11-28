@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/entities/font_size.dart';
 import '../domain/entities/settings.dart';
+import '../infrastructure/config/env_config.dart';
 import '../infrastructure/database/database.dart';
 import '../infrastructure/api/gemini_client.dart';
 import '../infrastructure/repositories/memo_repository_impl.dart';
@@ -39,18 +40,33 @@ final sharedPreferencesProvider = FutureProvider<SharedPreferences>((ref) async 
 });
 
 /// Gemini API key provider.
+/// 環境変数 (.env) から優先的にAPIキーを読み込み、
+/// なければSecure Storageから読み込む
 final geminiApiKeyProvider = FutureProvider<String?>((ref) async {
+  // 1. まず環境変数から読み込み
+  if (EnvConfig.hasApiKey) {
+    return EnvConfig.geminiApiKey;
+  }
+  
+  // 2. 環境変数になければSecure Storageから読み込み
   final storage = ref.watch(secureStorageProvider);
   return storage.read(key: 'gemini_api_key');
 });
 
 /// Gemini client provider.
+/// 環境変数が設定されていればそこから設定を読み込む
 final geminiClientProvider = FutureProvider<GeminiClient?>((ref) async {
   final apiKey = await ref.watch(geminiApiKeyProvider.future);
   if (apiKey == null || apiKey.isEmpty) {
     return null;
   }
   
+  // 環境変数からAPIキーが設定されている場合は、環境変数の設定を使用
+  if (EnvConfig.hasApiKey) {
+    return GeminiClient(GeminiConfig.fromEnv());
+  }
+  
+  // そうでなければ、Secure StorageのAPIキーを使用
   return GeminiClient(GeminiConfig(apiKey: apiKey));
 });
 
@@ -169,9 +185,33 @@ final settingsProvider = AsyncNotifierProvider<SettingsNotifier, Settings>(
 );
 
 /// API key setup state.
+/// 環境変数またはSecure StorageにAPIキーが設定されているかチェック
 final isApiKeySetProvider = FutureProvider<bool>((ref) async {
+  // 環境変数にAPIキーがあればtrue
+  if (EnvConfig.hasApiKey) {
+    return true;
+  }
+  
+  // なければSecure Storageをチェック
   final apiKey = await ref.watch(geminiApiKeyProvider.future);
   return apiKey != null && apiKey.isNotEmpty;
+});
+
+/// APIキーのソースを示すプロバイダー
+enum ApiKeySource { none, env, secureStorage }
+
+final apiKeySourceProvider = FutureProvider<ApiKeySource>((ref) async {
+  if (EnvConfig.hasApiKey) {
+    return ApiKeySource.env;
+  }
+  
+  final storage = ref.watch(secureStorageProvider);
+  final apiKey = await storage.read(key: 'gemini_api_key');
+  if (apiKey != null && apiKey.isNotEmpty) {
+    return ApiKeySource.secureStorage;
+  }
+  
+  return ApiKeySource.none;
 });
 
 /// Save API key action.
