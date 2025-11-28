@@ -13,7 +13,7 @@ class DictionaryUseCases {
   DictionaryUseCases({
     required DictionaryRepository dictionaryRepository,
     required SimilarityRepository similarityRepository,
-    required GeminiClient geminiClient,
+    GeminiClient? geminiClient,
   })  : _dictionaryRepository = dictionaryRepository,
         _similarityRepository = similarityRepository,
         _geminiClient = geminiClient;
@@ -21,7 +21,10 @@ class DictionaryUseCases {
   final DictionaryRepository _dictionaryRepository;
   // ignore: unused_field - Reserved for future similarity comparison operations
   final SimilarityRepository _similarityRepository;
-  final GeminiClient _geminiClient;
+  final GeminiClient? _geminiClient;
+
+  /// AI分析が利用可能かどうか
+  bool get isAiAvailable => _geminiClient != null;
 
   static const _uuid = Uuid();
 
@@ -58,6 +61,7 @@ class DictionaryUseCases {
   }
 
   /// Creates a dictionary entry with embedding.
+  /// AIが利用可能な場合のみ分析を実行
   Future<DictionaryEntry> createEntryWithEmbedding({
     required String keyword,
     required String description,
@@ -68,7 +72,18 @@ class DictionaryUseCases {
       description: description,
       category: category,
     );
-    return analyzeEntry(entry.id);
+    
+    // AIが利用可能な場合のみ分析を実行
+    if (_geminiClient != null) {
+      try {
+        return await analyzeEntry(entry.id);
+      } on Exception {
+        // AI分析に失敗しても、エントリ自体は保存済み
+        return entry;
+      }
+    }
+    
+    return entry;
   }
 
   /// Gets all dictionary entries.
@@ -136,7 +151,12 @@ class DictionaryUseCases {
   }
 
   /// Analyzes an entry and generates embedding.
+  /// GeminiClientが必要
   Future<DictionaryEntry> analyzeEntry(String entryId) async {
+    if (_geminiClient == null) {
+      throw Exception('AI analysis is not available: API key not configured');
+    }
+    
     final entry = await _dictionaryRepository.findById(entryId);
     if (entry == null) {
       throw Exception('辞書エントリが見つかりません: $entryId');
@@ -188,6 +208,11 @@ class DictionaryUseCases {
   }
 
   Future<Category> _suggestCategory(String keyword, String description) async {
+    // AIが利用可能な場合のみ提案
+    if (_geminiClient == null) {
+      return Category.other;
+    }
+    
     try {
       final categoryName = await _geminiClient.suggestCategory(
         keyword,
