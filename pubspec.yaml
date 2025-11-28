@@ -22,6 +22,7 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   speech_to_text: ^7.3.0
   connectivity_plus: ^7.0.0
+  flutter_dotenv: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -36,3 +37,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  
+  assets:
+    - .env
