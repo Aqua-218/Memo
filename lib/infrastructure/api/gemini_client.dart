@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:google_generative_ai/google_generative_ai.dart';
 
+import '../config/env_config.dart';
+
 /// Exception thrown when Gemini API operations fail.
 class GeminiException implements Exception {
   const GeminiException(this.message, {this.cause});
@@ -19,11 +21,21 @@ class GeminiConfig {
   const GeminiConfig({
     required this.apiKey,
     this.embeddingModel = 'models/text-embedding-004',
-    this.generationModel = 'gemini-1.5-flash',
+    this.generationModel = 'gemini-2.0-flash',
     this.embeddingDimensions = 768,
     this.maxRetries = 3,
     this.retryDelayMs = 1000,
   });
+
+  /// 環境変数から設定を読み込んで生成
+  factory GeminiConfig.fromEnv() {
+    return GeminiConfig(
+      apiKey: EnvConfig.geminiApiKey,
+      embeddingModel: 'models/${EnvConfig.geminiEmbeddingModel}',
+      generationModel: EnvConfig.geminiTextModel,
+      maxRetries: EnvConfig.apiMaxRetries,
+    );
+  }
 
   final String apiKey;
   final String embeddingModel;
