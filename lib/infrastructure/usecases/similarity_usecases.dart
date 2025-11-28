@@ -17,7 +17,7 @@ class SimilarityUseCases {
     required MemoRepository memoRepository,
     required DictionaryRepository dictionaryRepository,
     required SimilarityRepository similarityRepository,
-    required GeminiClient geminiClient,
+    GeminiClient? geminiClient,
   })  : _memoRepository = memoRepository,
         _dictionaryRepository = dictionaryRepository,
         _similarityRepository = similarityRepository,
@@ -27,7 +27,7 @@ class SimilarityUseCases {
   final DictionaryRepository _dictionaryRepository;
   final SimilarityRepository _similarityRepository;
   // ignore: unused_field - Reserved for future Gemini API embedding operations
-  final GeminiClient _geminiClient;
+  final GeminiClient? _geminiClient;
 
   static const _uuid = Uuid();
 
