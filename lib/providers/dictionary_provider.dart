@@ -91,8 +91,6 @@ class DictionaryListNotifier extends AsyncNotifier<DictionaryListState> {
   }) async {
     try {
       final useCases = await ref.read(dictionaryUseCasesProvider.future);
-      if (useCases == null) return null;
-
       final entry = await useCases.createEntryWithEmbedding(
         keyword: keyword,
         description: description,
@@ -114,8 +112,6 @@ class DictionaryListNotifier extends AsyncNotifier<DictionaryListState> {
   }) async {
     try {
       final useCases = await ref.read(dictionaryUseCasesProvider.future);
-      if (useCases == null) return null;
-
       final entry = await useCases.updateEntry(
         id: id,
         keyword: keyword,
@@ -133,8 +129,6 @@ class DictionaryListNotifier extends AsyncNotifier<DictionaryListState> {
   Future<void> deleteEntry(String id) async {
     try {
       final useCases = await ref.read(dictionaryUseCasesProvider.future);
-      if (useCases == null) return;
-
       await useCases.deleteEntry(id);
       await loadEntries();
     } on Exception catch (e) {
@@ -168,7 +162,5 @@ final currentDictionaryEntryProvider = NotifierProvider<CurrentDictionaryEntryNo
 /// Category statistics.
 final categoryStatsProvider = FutureProvider<Map<Category, int>>((ref) async {
   final useCases = await ref.watch(dictionaryUseCasesProvider.future);
-  if (useCases == null) return {};
-
   return useCases.getCategoryStats();
 });
