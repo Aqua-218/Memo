@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'domain/entities/font_size.dart';
+import 'infrastructure/config/env_config.dart';
 import 'providers/providers.dart';
 import 'ui/theme/app_theme.dart';
 import 'ui/screens/home_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 環境変数を読み込む
+  await EnvConfig.load();
   
   runApp(
     const ProviderScope(
