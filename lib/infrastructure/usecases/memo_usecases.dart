@@ -16,14 +16,17 @@ class MemoUseCases {
   MemoUseCases({
     required MemoRepository memoRepository,
     required SimilarityRepository similarityRepository,
-    required GeminiClient geminiClient,
+    GeminiClient? geminiClient,
   })  : _memoRepository = memoRepository,
         _similarityRepository = similarityRepository,
         _geminiClient = geminiClient;
 
   final MemoRepository _memoRepository;
   final SimilarityRepository _similarityRepository;
-  final GeminiClient _geminiClient;
+  final GeminiClient? _geminiClient;
+
+  /// AI分析が利用可能かどうか
+  bool get isAiAvailable => _geminiClient != null;
 
   static const _uuid = Uuid();
 
@@ -47,9 +50,21 @@ class MemoUseCases {
   /// Creates a memo with embedding analysis.
   /// 
   /// Spec: FR-003 - AI semantic analysis
+  /// AIが利用可能な場合のみ分析を実行
   Future<Memo> createMemoWithAnalysis(String content) async {
     final memo = await createMemo(content);
-    return analyzeMemo(memo.id);
+    
+    // AIが利用可能な場合のみ分析を実行
+    if (_geminiClient != null) {
+      try {
+        return await analyzeMemo(memo.id);
+      } on Exception {
+        // AI分析に失敗しても、メモ自体は保存済み
+        return memo;
+      }
+    }
+    
+    return memo;
   }
 
   /// Gets all memos.
@@ -95,9 +110,21 @@ class MemoUseCases {
   }
 
   /// Updates a memo with re-analysis.
+  /// AIが利用可能な場合のみ分析を実行
   Future<Memo> updateMemoWithAnalysis(String id, String content) async {
-    await updateMemo(id, content);
-    return analyzeMemo(id);
+    final memo = await updateMemo(id, content);
+    
+    // AIが利用可能な場合のみ分析を実行
+    if (_geminiClient != null) {
+      try {
+        return await analyzeMemo(id);
+      } on Exception {
+        // AI分析に失敗しても、メモ自体は更新済み
+        return memo;
+      }
+    }
+    
+    return memo;
   }
 
   /// Deletes a memo.
@@ -111,7 +138,12 @@ class MemoUseCases {
   /// Analyzes a memo and generates embedding.
   /// 
   /// Spec: FR-003 - AI semantic analysis
+  /// GeminiClientが必要
   Future<Memo> analyzeMemo(String memoId) async {
+    if (_geminiClient == null) {
+      throw Exception('AI analysis is not available: API key not configured');
+    }
+    
     final memo = await _memoRepository.findById(memoId);
     if (memo == null) {
       throw Exception('Memo not found: $memoId');
@@ -197,10 +229,15 @@ class MemoUseCases {
   /// Analyzes duplicate with detailed LLM explanation.
   /// 
   /// Spec: FR-004 - User-friendly duplicate notification
+  /// GeminiClientが必要
   Future<DuplicateAnalysisResult> analyzeDuplicateWithLLM({
     required String newContent,
     required String existingMemoId,
   }) async {
+    if (_geminiClient == null) {
+      throw Exception('AI analysis is not available: API key not configured');
+    }
+    
     final existingMemo = await _memoRepository.findById(existingMemoId);
     if (existingMemo == null) {
       throw Exception('Existing memo not found: $existingMemoId');
